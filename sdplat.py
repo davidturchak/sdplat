@@ -83,8 +83,8 @@ def run_latency_measurement(session_ips, network_address):
         if bitwise_and(ip, network_address) == network_address:
             print("Running latency measurement using local qperf for", ip)
             try:
-                result = subprocess.run(['./qperf', '-t', '5', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)
-                latency_match = re.search(r'latency\s*=\s*(\d+)\s*us', result.stdout)
+                result = subprocess.run(['./qperf', '-t', '5', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)               
+                latency_match = re.search(r'latency\s*=\s*([0-9.]+)\s*us', result.stdout, re.MULTILINE)
                 if latency_match:
                     latency = latency_match.group(1)
                     latencies.append((ip, latency))
