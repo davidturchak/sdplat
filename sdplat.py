@@ -72,7 +72,7 @@ def start_qperf(session_ips, network_address, ssh_password):
         if bitwise_and(ip, network_address) == network_address:
             print("Starting qperf on", ip)
             try:
-                subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', '-f', ip, 'nohup /root/qperf </dev/null >/dev/null 2>&1 & pgrep qperf'], check=True)
+                subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'nohup /root/qperf </dev/null >/dev/null 2>&1 & pgrep qperf'], check=True)
             except Exception as e:
                 print("Exception occurred while starting qperf on", ip, ":", e)
 
@@ -83,7 +83,7 @@ def run_latency_measurement(session_ips, network_address):
         if bitwise_and(ip, network_address) == network_address:
             print("Running latency measurement using local qperf for", ip)
             try:
-                result = subprocess.run(['./qperf', '-t', '5', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)               
+                result = subprocess.run(['./qperf', '-t', '2', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)               
                 latency_match = re.search(r'latency\s*=\s*([0-9.]+)\s*us', result.stdout, re.MULTILINE)
                 if latency_match:
                     latency = latency_match.group(1)
