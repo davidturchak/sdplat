@@ -41,6 +41,8 @@ def get_session_ips():
             match = re.search(r'tcp:.*?(\d+\.\d+\.\d+\.\d+)', line)
             if match:
                 session_ips.append(match.group(1))
+        # Sort the list of IPs numerically
+        session_ips.sort(key=lambda ip: [int(part) for part in ip.split('.')])
         return session_ips
     except Exception as e:
         print("Exception occurred while getting session IPs:", e)
