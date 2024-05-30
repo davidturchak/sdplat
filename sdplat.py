@@ -80,7 +80,7 @@ def start_qperf(session_ips, network_address, ssh_password):
         if bitwise_and(ip, network_address) == network_address:
             print("Starting qperf on: ", ip)
             try:
-                subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'nohup /root/qperf -lp 32111 </dev/null >/dev/null 2>&1'], check=True)
+                subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'nohup /root/qperf -lp 32111 </dev/null >/dev/null 2>&1 &'], check=True)
             except subprocess.CalledProcessError as e:
                 if e.returncode != 1:
                     print("Exception occurred while starting qperf processes on", ip, ":", e)
