@@ -78,7 +78,7 @@ def transfer_file(session_ips, network_address, ssh_password):
 def start_qperf(session_ips, network_address, ssh_password):
     for ip in session_ips:
         if bitwise_and(ip, network_address) == network_address:
-            print("Starting qperf on", ip)
+            print("--- Starting qperf on", ip, " ---")
             try:
                 subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'nohup /root/qperf </dev/null >/dev/null 2>&1 & pgrep qperf'], check=True)
             except Exception as e:
@@ -89,7 +89,7 @@ def run_latency_measurement(session_ips, network_address):
     latencies = []
     for ip in session_ips:
         if bitwise_and(ip, network_address) == network_address:
-            print("Running latency measurement using local qperf for", ip)
+            print("--- Running latency measurement using local qperf for", ip, " ---")
             try:
                 result = subprocess.run(['./qperf', '-t', '2', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)               
                 latency_match = re.search(r'latency\s*=\s*([0-9.]+)\s*us', result.stdout, re.MULTILINE)
