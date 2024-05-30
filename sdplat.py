@@ -10,6 +10,9 @@ INTERFACE = "ib0"
 
 # Function to perform bitwise AND operation
 def bitwise_and(ip1, ip2):
+    # In case of GCP as a workaround replace ip2 if it is 255.255.255.255
+    if ip2 == '255.255.255.255':
+        ip2 = '255.255.255.0'
     ip1_octets = list(map(int, ip1.split('.')))
     ip2_octets = list(map(int, ip2.split('.')))
     network_address = []
@@ -54,9 +57,12 @@ def kill_existing_qperf(session_ips, network_address, ssh_password):
         if bitwise_and(ip, network_address) == network_address:
             print("Killing existing qperf processes on", ip)
             try:
-                subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no',  ip, 'pkill qperf'], check=True)
-            except Exception as e:
-                print("Exception occurred while killing qperf processes on", ip, ":", e)
+                subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'pkill qperf'], check=True)
+            except subprocess.CalledProcessError as e:
+                if e.returncode != 1:
+                    print("Exception occurred while killing qperf processes on", ip, ":", e)
+                else :
+                    print("Looks like qperf process is not running yet on: ", ip)
 
 # Function to transfer file to each IP in the same network address
 def transfer_file(session_ips, network_address, ssh_password):
