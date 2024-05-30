@@ -81,8 +81,11 @@ def start_qperf(session_ips, network_address, ssh_password):
             print("Starting qperf on: ", ip)
             try:
                 subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'nohup /root/qperf -lp 32111 </dev/null >/dev/null 2>&1'], check=True)
-            except Exception as e:
-                print("Exception occurred while starting qperf on", ip, ":", e)
+            except subprocess.CalledProcessError as e:
+                if e.returncode != 1:
+                    print("Exception occurred while starting qperf processes on", ip, ":", e)
+                else :
+                    print("Looks like it's a first start of : ", ip)
 
 # Function to run latency measurement using local qperf for each IP
 def run_latency_measurement(session_ips, network_address):
