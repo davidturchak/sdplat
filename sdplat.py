@@ -78,7 +78,7 @@ def transfer_file(session_ips, network_address, ssh_password):
 def start_qperf(session_ips, network_address, ssh_password):
     for ip in session_ips:
         if bitwise_and(ip, network_address) == network_address:
-            print("--- Starting qperf on", ip, " ---")
+            print("Starting qperf on: ", ip)
             try:
                 subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'nohup /root/qperf -lp 32111 </dev/null >/dev/null 2>&1 & pgrep qperf'], check=True)
             except Exception as e:
@@ -89,7 +89,7 @@ def run_latency_measurement(session_ips, network_address):
     latencies = []
     for ip in session_ips:
         if bitwise_and(ip, network_address) == network_address:
-            print("--- Running latency measurement using local qperf for", ip, " ---")
+            print("Running latency measurement using local qperf for: ", ip )
             try:
                 result = subprocess.run(['./qperf', '-lp', '32111', '-ip', '32112', '-t', '2', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)               
                 latency_match = re.search(r'latency\s*=\s*([0-9.]+)\s*us', result.stdout, re.MULTILINE)
@@ -127,34 +127,34 @@ def main():
     ssh_password = args.password
     output_file = args.output
 
-    print("Getting IP address and netmask for interface", INTERFACE)
+    print("--- Getting IP address and netmask for interface --- ", INTERFACE)
     # Extract IP address and netmask
     interface_ip, netmask = get_ip_and_netmask(INTERFACE)
 
     # Calculate network address
     network_address = bitwise_and(interface_ip, netmask)
 
-    print("Extracting iSCSI sessions IPs")
+    print("--- Extracting iSCSI sessions IPs ---")
     # Extract session IPs
     session_ips = get_session_ips()
 
-    print("Killing existing qperf processes on each dnode")
+    print("--- Killing existing qperf processes on each dnode ---")
     # Kill existing qperf processes
     kill_existing_qperf(session_ips, network_address, ssh_password)
 
-    print("Transferring qperf file to each dnode")
+    print("--- Transferring qperf file to each dnode ---")
     # Transfer qperf file to each IP in the same network address
     transfer_file(session_ips, network_address, ssh_password)
 
-    print("Starting qperf service on each dnode")
+    print("--- Starting qperf service on each dnode ---")
     # Start qperf on each IP in the same network address
     start_qperf(session_ips, network_address, ssh_password)
 
-    print("Running latency measurement using local qperf")
+    print("--- Running latency measurement using local qperf ---")
     # Run latency measurement using local qperf for each IP
     latencies = run_latency_measurement(session_ips, network_address)
 
-    print("Writing latency data to CSV file")
+    print("--- Writing latency data to CSV file ---")
     # Write latency data to CSV file
     write_to_csv(latencies, output_file, interface_ip)
 
