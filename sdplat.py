@@ -61,7 +61,7 @@ def kill_existing_qperf(session_ips, network_address, ssh_password):
             except subprocess.CalledProcessError as e:
                 if e.returncode != 1:
                     print("Exception occurred while killing qperf processes on", ip, ":", e)
-                else :
+                else:
                     print("Looks like qperf process is not running yet on: ", ip)
 
 # Function to transfer file to each IP in the same network address
@@ -84,7 +84,7 @@ def start_qperf(session_ips, network_address, ssh_password):
             except subprocess.CalledProcessError as e:
                 if e.returncode != 1:
                     print("Exception occurred while starting qperf processes on", ip, ":", e)
-                else :
+                else:
                     print("Looks like it's a first start of : ", ip)
 
 # Function to run latency measurement using local qperf for each IP
@@ -94,7 +94,7 @@ def run_latency_measurement(session_ips, network_address):
         if bitwise_and(ip, network_address) == network_address:
             print("Running latency measurement using local qperf for: ", ip )
             try:
-                result = subprocess.run(['./qperf', '-lp', '32111', '-ip', '32112', '-t', '2', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)               
+                result = subprocess.run(['./qperf', '-lp', '32111', '-ip', '32112', '-t', '2', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)
                 latency_match = re.search(r'latency\s*=\s*([0-9.]+)\s*us', result.stdout, re.MULTILINE)
                 if latency_match:
                     latency = latency_match.group(1)
@@ -124,11 +124,13 @@ def main():
     parser = argparse.ArgumentParser(description="Transfer a file to each IP in the same network address, kill any existing qperf processes, start qperf on each one, and run latency measurement using local qperf.")
     parser.add_argument("--password", required=True, help="SSH password")
     parser.add_argument("--output", required=True, help="Output CSV file")
+    parser.add_argument("--noprepare", action='store_true', help="Skip preparing steps (killing, transferring, starting qperf)")
 
     args = parser.parse_args()
 
     ssh_password = args.password
     output_file = args.output
+    skip_prepare = args.noprepare
 
     print("--- Getting IP address and netmask for interface --- ", INTERFACE)
     # Extract IP address and netmask
@@ -141,17 +143,18 @@ def main():
     # Extract session IPs
     session_ips = get_session_ips()
 
-    print("--- Killing existing qperf processes on each dnode ---")
-    # Kill existing qperf processes
-    kill_existing_qperf(session_ips, network_address, ssh_password)
+    if not skip_prepare:
+        print("--- Killing existing qperf processes on each dnode ---")
+        # Kill existing qperf processes
+        kill_existing_qperf(session_ips, network_address, ssh_password)
 
-    print("--- Transferring qperf file to each dnode ---")
-    # Transfer qperf file to each IP in the same network address
-    transfer_file(session_ips, network_address, ssh_password)
+        print("--- Transferring qperf file to each dnode ---")
+        # Transfer qperf file to each IP in the same network address
+        transfer_file(session_ips, network_address, ssh_password)
 
-    print("--- Starting qperf service on each dnode ---")
-    # Start qperf on each IP in the same network address
-    start_qperf(session_ips, network_address, ssh_password)
+        print("--- Starting qperf service on each dnode ---")
+        # Start qperf on each IP in the same network address
+        start_qperf(session_ips, network_address, ssh_password)
 
     print("--- Running latency measurement using local qperf ---")
     # Run latency measurement using local qperf for each IP
