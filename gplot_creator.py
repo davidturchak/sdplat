@@ -60,7 +60,7 @@ set style line 1 lc rgb "blue" # Normal bars
 set style line 2 lc rgb "red"  # Bars with latency > 35
 
 # Plot with conditional coloring
-plot '{dat_path}' using 2:(($2 > 35) ? 2 : 1):xtic(1) title "Latency11111" lc variable
+plot '{dat_path}' using 2:(($2 > 35) ? 2 : 1):xtic(1) title "Latency" lc variable
 """)
         print(f"Created {gp_file}")
     except Exception as e:
