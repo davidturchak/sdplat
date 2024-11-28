@@ -81,8 +81,14 @@ def cleanup_files(dat_file, gp_file, folder):
     except Exception as e:
         print(f"Error deleting files: {e}")
 
-import os
-import subprocess
+def delete_jpg_files(folder):
+    jpg_files = [f for f in os.listdir(folder) if f.endswith('.jpg')]
+    for jpg_file in jpg_files:
+        try:
+            os.remove(os.path.join(folder, jpg_file))
+            print(f"Deleted {jpg_file}")
+        except Exception as e:
+            print(f"Error deleting {jpg_file}: {e}")
 
 def merge_images(folder):
     # Collect all .jpg files in the provided folder
@@ -107,6 +113,9 @@ def merge_images(folder):
         print(f"Error merging images: {e}")
 
 def process_files(folder):
+    # Delete all existing .jpg files in the folder
+    delete_jpg_files(folder)
+
     matching_files = find_matching_files(folder)
     if matching_files:
         print("Processing files:")
