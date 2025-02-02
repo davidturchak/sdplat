@@ -51,6 +51,9 @@ def get_session_ips():
         print("Exception occurred while getting session IPs:", e)
         exit(1)
 
+def get_cnodes_session_ips():
+    return ["10.208.38.5"]
+
 # Function to kill existing qperf processes on each IP
 def kill_existing_qperf(session_ips, network_address, ssh_password):
     for ip in session_ips:
@@ -124,6 +127,7 @@ def main():
     parser = argparse.ArgumentParser(description="Transfer a file to each IP in the same network address, kill any existing qperf processes, start qperf on each one, and run latency measurement using local qperf.")
     parser.add_argument("--password", required=True, help="SSH password")
     parser.add_argument("--output", required=True, help="Output CSV file")
+    parser.add_argument("--cnodes", action='store_true', help="Use cnodes session IPs instead of dnodes")
     parser.add_argument("--noprepare", action='store_true', help="Skip preparing steps (killing, transferring, starting qperf)")
 
     args = parser.parse_args()
@@ -141,7 +145,7 @@ def main():
 
     print("--- Extracting iSCSI sessions IPs ---")
     # Extract session IPs
-    session_ips = get_session_ips()
+    session_ips = get_cnodes_session_ips() if args.cnodes else get_session_ips()
 
     if not skip_prepare:
         print("--- Killing existing qperf processes on each dnode ---")
