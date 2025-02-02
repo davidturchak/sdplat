@@ -4,6 +4,10 @@ import argparse
 import re
 import csv
 import datetime
+import psutil
+import ipaddress
+import socket
+
 
 # Constant for the interface name
 INTERFACE = "ib0"
@@ -52,7 +56,20 @@ def get_session_ips():
         exit(1)
 
 def get_cnodes_session_ips():
-    return ["10.208.38.5"]
+    try:
+        port = 55655
+        connections = psutil.net_connections(kind='tcp')
+        session_ips = set()
+
+        for conn in connections:
+            if conn.status == psutil.CONN_ESTABLISHED and conn.raddr.port == port:
+                session_ips.add(conn.raddr.ip)
+        # Sort the list of IPs numerically
+        sorted_ips = sorted(session_ips, key=lambda ip: [int(part) for part in ip.split('.')])
+        return sorted_ips
+    except Exception as e:
+        print("Exception occurred while getting session IPs:", e)
+        return []
 
 # Function to kill existing qperf processes on each IP
 def kill_existing_qperf(session_ips, network_address, ssh_password):
