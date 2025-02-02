@@ -55,6 +55,7 @@ def get_session_ips():
         print("Exception occurred while getting session IPs:", e)
         exit(1)
 
+# Function to extract a cnode ips based on KUIC established sessions
 def get_cnodes_session_ips():
     try:
         port = 55655
