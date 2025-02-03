@@ -146,6 +146,7 @@ def main():
     parser.add_argument("--password", required=True, help="SSH password")
     parser.add_argument("--output", required=True, help="Output CSV file")
     parser.add_argument("--cnodes", action='store_true', help="Use cnodes session IPs instead of dnodes")
+    parser.add_argument("--ip", action='store_true', help="Use specified host ip")
     parser.add_argument("--noprepare", action='store_true', help="Skip preparing steps (killing, transferring, starting qperf)")
 
     args = parser.parse_args()
@@ -153,6 +154,7 @@ def main():
     ssh_password = args.password
     output_file = args.output
     skip_prepare = args.noprepare
+    ip = args.ip
 
     print("--- Getting IP address and netmask for interface --- ", INTERFACE)
     # Extract IP address and netmask
@@ -162,19 +164,25 @@ def main():
     network_address = bitwise_and(interface_ip, netmask)
 
     print("--- Extracting iSCSI sessions IPs ---")
+
     # Extract session IPs
-    session_ips = get_cnodes_session_ips() if args.cnodes else get_session_ips()
+    if args.ip:
+        session_ips = [ip]
+    elif args.cnodes:
+        session_ips = get_cnodes_session_ips()
+    else:
+        session_ips = get_session_ips()
 
     if not skip_prepare:
-        print("--- Killing existing qperf processes on each dnode ---")
+        print("--- Killing existing qperf processes on each node ---")
         # Kill existing qperf processes
         kill_existing_qperf(session_ips, network_address, ssh_password)
 
-        print("--- Transferring qperf file to each dnode ---")
+        print("--- Transferring qperf file to each node ---")
         # Transfer qperf file to each IP in the same network address
         transfer_file(session_ips, network_address, ssh_password)
 
-        print("--- Starting qperf service on each dnode ---")
+        print("--- Starting qperf service on each node ---")
         # Start qperf on each IP in the same network address
         start_qperf(session_ips, network_address, ssh_password)
 
