@@ -89,14 +89,17 @@ def kill_existing_qperf(session_ips, network_address, ssh_password):
 def transfer_file(session_ips, network_address, ssh_password):
     for ip in session_ips:
         if bitwise_and(ip, network_address) == network_address:
-            print("Transferring qperf file to", ip)
+            scp_command = [
+                'sshpass', '-p', ssh_password, 
+                'scp', '-o', 'StrictHostKeyChecking=no', 'qperf', 
+                f'root@{ip}:/root/qperf'
+            ]
+            print(f"Executing: {' '.join(scp_command)}")
             try:
-                subprocess.run([
-                    'sshpass', '-p', ssh_password, 'scp', '-o', 'StrictHostKeyChecking=no', 'qperf', f'root@{ip}:/root/qperf'
-                ], check=True)
-                print("Transfer successful to", ip)
+                result = subprocess.run(scp_command, capture_output=True, text=True, check=True)
+                print(f"Transfer to {ip} successful: {result.stdout}")
             except subprocess.CalledProcessError as e:
-                print("Failed to transfer qperf to", ip, ":", e)
+                print(f"Failed to transfer qperf to {ip}: {e.stderr}")
 
 # Function to start qperf on each IP in the same network address
 def start_qperf(session_ips, network_address, ssh_password):
