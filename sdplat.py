@@ -73,9 +73,12 @@ def get_cnodes_session_ips():
         return []
 
 # Function to kill existing qperf processes on each IP
-def kill_existing_qperf(session_ips, network_address, ssh_password):
+def kill_existing_qperf(session_ips, network_address, ssh_password, specific_ip=None):
     for ip in session_ips:
-        if bitwise_and(ip, network_address) == network_address:
+        # If --ip is specified, bypass the subnet check
+        if specific_ip and ip == specific_ip:
+            print("Killing existing qperf processes on", ip, "(skipping network check)")
+        elif bitwise_and(ip, network_address) == network_address:
             print("Killing existing qperf processes on", ip)
             try:
                 subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'pkill qperf'], check=True)
@@ -107,10 +110,13 @@ def transfer_file(session_ips, network_address, ssh_password, specific_ip=None):
             print(f"Failed to transfer qperf to {ip}: {e.stderr}")
 
 # Function to start qperf on each IP in the same network address
-def start_qperf(session_ips, network_address, ssh_password):
+def start_qperf(session_ips, network_address, ssh_password, specific_ip=None):
     for ip in session_ips:
-        if bitwise_and(ip, network_address) == network_address:
-            print("Starting qperf on: ", ip)
+        # If --ip is specified, bypass the subnet check
+        if specific_ip and ip == specific_ip:
+            print("Starting qperf on:", ip, "(skipping network check)")
+        elif bitwise_and(ip, network_address) == network_address:
+            print("Starting qperf on:", ip)
             try:
                 subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'nohup /root/qperf -lp 32111 </dev/null >/dev/null 2>&1 &'], check=True)
             except subprocess.CalledProcessError as e:
@@ -120,11 +126,14 @@ def start_qperf(session_ips, network_address, ssh_password):
                     print("Looks like it's a first start of : ", ip)
 
 # Function to run latency measurement using local qperf for each IP
-def run_latency_measurement(session_ips, network_address):
+def run_latency_measurement(session_ips, network_address, specific_ip=None):
     latencies = []
     for ip in session_ips:
-        if bitwise_and(ip, network_address) == network_address:
-            print("Running latency measurement using local qperf for: ", ip )
+        # If --ip is specified, bypass the subnet check
+        if specific_ip and ip == specific_ip:
+            print("Running latency measurement using local qperf for:", ip, "(skipping network check)")
+        elif bitwise_and(ip, network_address) == network_address:
+            print("Running latency measurement using local qperf for:", ip)
             try:
                 result = subprocess.run(['./qperf', '-lp', '32111', '-ip', '32112', '-t', '2', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)
                 latency_match = re.search(r'latency\s*=\s*([0-9.]+)\s*us', result.stdout, re.MULTILINE)
@@ -205,7 +214,7 @@ def main():
 
     print("--- Running latency measurement using local qperf ---")
     # Run latency measurement using local qperf for each IP
-    latencies = run_latency_measurement(session_ips, network_address)
+    latencies = run_latency_measurement(session_ips, network_address, specific_ip=args.ip)
 
     print("--- Writing latency data to CSV file ---")
     # Write latency data to CSV file
