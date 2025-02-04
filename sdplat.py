@@ -14,7 +14,6 @@ INTERFACE = "ib0"
 
 # Function to perform bitwise AND operation
 def bitwise_and(ip1, ip2):
-    # In case of GCP as a workaround replace ip2 if it is 255.255.255.255
     if ip2 == '255.255.255.255':
         ip2 = '255.255.255.0'
     ip1_octets = list(map(int, ip1.split('.')))
@@ -33,10 +32,10 @@ def get_ip_and_netmask(interface):
         if ip_match and netmask_match:
             return ip_match.group(1), netmask_match.group(1)
         else:
-            print("Error: IP address or netmask not found for interface", interface)
+            print(f"Error: IP address or netmask not found for interface {interface}")
             exit(1)
     except Exception as e:
-        print("Exception occurred while getting IP address and netmask:", e)
+        print(f"Exception occurred while getting IP address and netmask: {e}")
         exit(1)
 
 # Extract IPs from 'iscsiadm -m session' and store them in a list
@@ -48,14 +47,13 @@ def get_session_ips():
             match = re.search(r'tcp:.*?(\d+\.\d+\.\d+\.\d+)', line)
             if match:
                 session_ips.append(match.group(1))
-        # Sort the list of IPs numerically
         session_ips.sort(key=lambda ip: [int(part) for part in ip.split('.')])
         return session_ips
     except Exception as e:
-        print("Exception occurred while getting session IPs:", e)
+        print(f"Exception occurred while getting session IPs: {e}")
         exit(1)
 
-# Function to extract a cnode ips based on KUIC established sessions
+# Function to extract cnode IPs based on KUIC established sessions
 def get_cnodes_session_ips():
     try:
         port = 55655
@@ -65,33 +63,29 @@ def get_cnodes_session_ips():
         for conn in connections:
             if conn.status == psutil.CONN_ESTABLISHED and conn.raddr.port == port:
                 session_ips.add(conn.raddr.ip)
-        # Sort the list of IPs numerically
-        sorted_ips = sorted(session_ips, key=lambda ip: [int(part) for part in ip.split('.')])
-        return sorted_ips
+        return sorted(session_ips, key=lambda ip: [int(part) for part in ip.split('.')])
     except Exception as e:
-        print("Exception occurred while getting session IPs:", e)
+        print(f"Exception occurred while getting session IPs: {e}")
         return []
 
 # Function to kill existing qperf processes on each IP
 def kill_existing_qperf(session_ips, network_address, ssh_password, specific_ip=None):
     for ip in session_ips:
-        # If --ip is specified, bypass the subnet check
         if specific_ip and ip == specific_ip:
-            print("Killing existing qperf processes on", ip, "(skipping network check)")
+            print(f"Killing existing qperf processes on {ip} (skipping network check)")
         elif bitwise_and(ip, network_address) == network_address:
-            print("Killing existing qperf processes on", ip)
+            print(f"Killing existing qperf processes on {ip}")
         try:
             subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'pkill qperf'], check=True)
         except subprocess.CalledProcessError as e:
             if e.returncode != 1:
-                print("Exception occurred while killing qperf processes on", ip, ":", e)
+                print(f"Exception occurred while killing qperf processes on {ip}: {e}")
             else:
-                print("Looks like qperf process is not running yet on: ", ip)
+                print(f"Looks like qperf process is not running yet on: {ip}")
 
 # Function to transfer file to each IP in the same network address
 def transfer_file(session_ips, network_address, ssh_password, specific_ip=None):
     for ip in session_ips:
-        # If --ip is specified, bypass the subnet check
         if specific_ip and ip == specific_ip:
             print(f"Transferring qperf file to {ip} (skipping network check)")
         elif bitwise_and(ip, network_address) != network_address:
@@ -112,39 +106,37 @@ def transfer_file(session_ips, network_address, ssh_password, specific_ip=None):
 # Function to start qperf on each IP in the same network address
 def start_qperf(session_ips, network_address, ssh_password, specific_ip=None):
     for ip in session_ips:
-        # If --ip is specified, bypass the subnet check
         if specific_ip and ip == specific_ip:
-            print("Starting qperf on:", ip, "(skipping network check)")
+            print(f"Starting qperf on: {ip} (skipping network check)")
         elif bitwise_and(ip, network_address) == network_address:
-            print("Starting qperf on:", ip)
+            print(f"Starting qperf on: {ip}")
         try:
             subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'nohup /root/qperf -lp 32111 </dev/null >/dev/null 2>&1 &'], check=True)
         except subprocess.CalledProcessError as e:
             if e.returncode != 1:
-                print("Exception occurred while starting qperf processes on", ip, ":", e)
+                print(f"Exception occurred while starting qperf processes on {ip}: {e}")
             else:
-                print("Looks like it's a first start of : ", ip)
+                print(f"Looks like it's a first start of: {ip}")
 
 # Function to run latency measurement using local qperf for each IP
 def run_latency_measurement(session_ips, network_address, specific_ip=None):
     latencies = []
     for ip in session_ips:
-        # If --ip is specified, bypass the subnet check
         if specific_ip and ip == specific_ip:
-            print("Running latency measurement using local qperf for:", ip, "(skipping network check)")
+            print(f"Running latency measurement using local qperf for: {ip} (skipping network check)")
         elif bitwise_and(ip, network_address) == network_address:
-            print("Running latency measurement using local qperf for:", ip)
+            print(f"Running latency measurement using local qperf for: {ip}")
         try:
             result = subprocess.run(['./qperf', '-lp', '32111', '-ip', '32112', '-t', '2', '-m', '4096', '--use_bits_per_sec', ip, 'tcp_lat'], capture_output=True, text=True, check=True)
             latency_match = re.search(r'latency\s*=\s*([0-9.]+)\s*us', result.stdout, re.MULTILINE)
             if latency_match:
                 latency = latency_match.group(1)
                 latencies.append((ip, latency))
-                print("Latency for", ip, ":", latency, "us")
+                print(f"Latency for {ip}: {latency} us")
             else:
-                print("Unable to find latency value for", ip)
+                print(f"Unable to find latency value for {ip}")
         except Exception as e:
-            print("Exception occurred while running latency measurement for", ip, ":", e)
+            print(f"Exception occurred while running latency measurement for {ip}: {e}")
     return latencies
 
 # Function to write latency data to CSV file
@@ -156,9 +148,9 @@ def write_to_csv(latencies, output_file, interface_ip):
             writer.writerow(['Time', 'Src_IP', 'Dest_IP', 'Latency (us)'])
             for ip, latency in latencies:
                 writer.writerow([timestamp, interface_ip, ip, latency])
-        print("Latency data written to", output_file)
+        print(f"Latency data written to {output_file}")
     except Exception as e:
-        print("Exception occurred while writing to CSV file:", e)
+        print(f"Exception occurred while writing to CSV file: {e}")
 
 # Main function
 def main():
@@ -175,18 +167,15 @@ def main():
     output_file = args.output
     skip_prepare = args.noprepare
 
-    print("--- Getting IP address and netmask for interface --- ", INTERFACE)
-    # Extract IP address and netmask
+    print(f"Getting IP address and netmask for interface {INTERFACE}")
     interface_ip, netmask = get_ip_and_netmask(INTERFACE)
 
-    # Calculate network address
     network_address = bitwise_and(interface_ip, netmask)
 
-    print("--- Extracting iSCSI sessions IPs ---")
+    print("Extracting iSCSI sessions IPs")
     session_ips = []
-    print("Session IPs before:", session_ips)
+    print(f"Session IPs before: {session_ips}")
 
-    # Extract session IPs
     if args.ip:
         session_ips = [args.ip]
     elif args.cnodes:
@@ -197,27 +186,22 @@ def main():
     if not session_ips:
         print("Error: No session IPs found.")
         return
-    print("Session IPs after:", session_ips)
+    print(f"Session IPs after: {session_ips}")
 
     if not skip_prepare:
-        print("--- Killing existing qperf processes on each node ---")
-        # Kill existing qperf processes
+        print("Killing existing qperf processes on each node")
         kill_existing_qperf(session_ips, network_address, ssh_password, specific_ip=args.ip)
 
-        print("--- Transferring qperf file to each node ---")
-        # Transfer qperf file to each IP in the same network address
+        print("Transferring qperf file to each node")
         transfer_file(session_ips, network_address, ssh_password, specific_ip=args.ip)
 
-        print("--- Starting qperf service on each node ---")
-        # Start qperf on each IP in the same network address
+        print("Starting qperf service on each node")
         start_qperf(session_ips, network_address, ssh_password, specific_ip=args.ip)
 
-    print("--- Running latency measurement using local qperf ---")
-    # Run latency measurement using local qperf for each IP
+    print("Running latency measurement using local qperf")
     latencies = run_latency_measurement(session_ips, network_address, specific_ip=args.ip)
 
-    print("--- Writing latency data to CSV file ---")
-    # Write latency data to CSV file
+    print("Writing latency data to CSV file")
     write_to_csv(latencies, output_file, interface_ip)
 
 if __name__ == "__main__":
