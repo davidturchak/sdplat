@@ -60,13 +60,22 @@ def get_cnodes_session_ips():
         connections = psutil.net_connections(kind='tcp')
         session_ips = set()
 
+        # Get the network address for the INTERFACE
+        interface_ip, netmask = get_ip_and_netmask(INTERFACE)
+        network_address = bitwise_and(interface_ip, netmask)
+
         for conn in connections:
             if conn.status == psutil.CONN_ESTABLISHED and conn.raddr.port == port:
-                session_ips.add(conn.raddr.ip)
+                ip = conn.raddr.ip
+                # Only include IPs that belong to the same network as INTERFACE
+                if bitwise_and(ip, netmask) == network_address:
+                    session_ips.add(ip)
+
         return sorted(session_ips, key=lambda ip: [int(part) for part in ip.split('.')])
     except Exception as e:
         print(f"Exception occurred while getting session IPs: {e}")
         return []
+
 
 # Function to kill existing qperf processes on each IP
 def kill_existing_qperf(session_ips, network_address, ssh_password, specific_ip=None):
@@ -189,13 +198,13 @@ def main():
     print(f"Session IPs after: {session_ips}")
 
     if not skip_prepare:
-        print("Killing existing qperf processes on each node")
+        print("Killing existing qperf processes on each IP")
         kill_existing_qperf(session_ips, network_address, ssh_password, specific_ip=args.ip)
 
-        print("Transferring qperf file to each node")
+        print("Transferring qperf file to each IP")
         transfer_file(session_ips, network_address, ssh_password, specific_ip=args.ip)
 
-        print("Starting qperf service on each node")
+        print("Starting qperf service on each IP")
         start_qperf(session_ips, network_address, ssh_password, specific_ip=args.ip)
 
     print("Running latency measurement using local qperf")
