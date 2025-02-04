@@ -154,8 +154,7 @@ def main():
     ssh_password = args.password
     output_file = args.output
     skip_prepare = args.noprepare
-    ip = args.ip
-
+    
     print("--- Getting IP address and netmask for interface --- ", INTERFACE)
     # Extract IP address and netmask
     interface_ip, netmask = get_ip_and_netmask(INTERFACE)
@@ -167,7 +166,7 @@ def main():
 
     # Extract session IPs
     if args.ip:
-        session_ips = [ip]
+        session_ips = [args.ip]
     elif args.cnodes:
         session_ips = get_cnodes_session_ips()
     else:
