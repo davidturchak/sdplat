@@ -86,8 +86,14 @@ def kill_existing_qperf(session_ips, network_address, ssh_password):
                     print("Looks like qperf process is not running yet on: ", ip)
 
 # Function to transfer file to each IP in the same network address
-def transfer_file(session_ips, network_address, ssh_password):
+def transfer_file(session_ips, network_address, ssh_password, specific_ip=None):
     for ip in session_ips:
+        # If --ip is specified, bypass the subnet check
+        if specific_ip and ip == specific_ip:
+            print(f"Transferring qperf file to {ip} (skipping network check)")
+        elif bitwise_and(ip, network_address) != network_address:
+            continue  # Skip if IP is not in the same network
+        
         scp_command = [
             'sshpass', '-p', ssh_password, 
             'scp', '-o', 'StrictHostKeyChecking=no', 'qperf', 
@@ -187,15 +193,15 @@ def main():
     if not skip_prepare:
         print("--- Killing existing qperf processes on each node ---")
         # Kill existing qperf processes
-        kill_existing_qperf(session_ips, network_address, ssh_password)
+        kill_existing_qperf(session_ips, network_address, ssh_password, specific_ip=args.ip)
 
         print("--- Transferring qperf file to each node ---")
         # Transfer qperf file to each IP in the same network address
-        transfer_file(session_ips, network_address, ssh_password)
+        transfer_file(session_ips, network_address, ssh_password, specific_ip=args.ip)
 
         print("--- Starting qperf service on each node ---")
         # Start qperf on each IP in the same network address
-        start_qperf(session_ips, network_address, ssh_password)
+        start_qperf(session_ips, network_address, ssh_password, specific_ip=args.ip)
 
     print("--- Running latency measurement using local qperf ---")
     # Run latency measurement using local qperf for each IP
