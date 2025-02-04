@@ -91,9 +91,12 @@ def transfer_file(session_ips, network_address, ssh_password):
         if bitwise_and(ip, network_address) == network_address:
             print("Transferring qperf file to", ip)
             try:
-                subprocess.run(['sshpass', '-p', ssh_password, 'scp', 'qperf', '{}:'.format(ip)], check=True)
-            except Exception as e:
-                print("Exception occurred while transferring qperf file to", ip, ":", e)
+                subprocess.run([
+                    'sshpass', '-p', ssh_password, 'scp', '-o', 'StrictHostKeyChecking=no', 'qperf', f'root@{ip}:/root/qperf'
+                ], check=True)
+                print("Transfer successful to", ip)
+            except subprocess.CalledProcessError as e:
+                print("Failed to transfer qperf to", ip, ":", e)
 
 # Function to start qperf on each IP in the same network address
 def start_qperf(session_ips, network_address, ssh_password):
