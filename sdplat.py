@@ -105,7 +105,7 @@ def transfer_file(session_ips, network_address, ssh_password, specific_ip=None):
             'scp', '-o', 'StrictHostKeyChecking=no', 'qperf', 
             f'root@{ip}:/root/qperf'
         ]
-        print(f"Executing: {' '.join(scp_command)}")
+        #print(f"Executing: {' '.join(scp_command)}")
         try:
             result = subprocess.run(scp_command, capture_output=True, text=True, check=True)
             print(f"Transfer to {ip} successful: {result.stdout}")
