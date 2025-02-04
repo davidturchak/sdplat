@@ -167,7 +167,7 @@ def main():
     parser.add_argument("--password", required=True, help="SSH password")
     parser.add_argument("--output", required=True, help="Output CSV file")
     parser.add_argument("--cnodes", action='store_true', help="Use cnodes session IPs instead of dnodes")
-    parser.add_argument("--ip", type=str, help="Specify host IP instead of extracting dnodes or cnodes ips")
+    parser.add_argument("--ip", type=str, help="Specify host IP instead of extracting dnodes or cnodes ips (for host mesurment need to open dataport1 outbound NSG on Azure)")
     parser.add_argument("--noprepare", action='store_true', help="Skip preparing steps (killing, transferring, starting qperf)")
 
     args = parser.parse_args()
