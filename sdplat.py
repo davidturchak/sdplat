@@ -163,6 +163,7 @@ def main():
     network_address = bitwise_and(interface_ip, netmask)
 
     print("--- Extracting iSCSI sessions IPs ---")
+    session_ips = []
     print("Session IPs before:", session_ips)
 
     # Extract session IPs
@@ -177,7 +178,7 @@ def main():
         print("Error: No session IPs found.")
         return
     print("Session IPs after:", session_ips)
-    
+
     if not skip_prepare:
         print("--- Killing existing qperf processes on each node ---")
         # Kill existing qperf processes
