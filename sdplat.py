@@ -183,7 +183,7 @@ def main():
 
     print("Extracting iSCSI sessions IPs")
     session_ips = []
-    print(f"Session IPs before: {session_ips}")
+    #print(f"Session IPs before: {session_ips}")
 
     if args.ip:
         session_ips = [args.ip]
@@ -195,7 +195,7 @@ def main():
     if not session_ips:
         print("Error: No session IPs found.")
         return
-    print(f"Session IPs after: {session_ips}")
+    #print(f"Session IPs after: {session_ips}")
 
     if not skip_prepare:
         print("Killing existing qperf processes on each IP")
