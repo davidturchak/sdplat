@@ -154,7 +154,7 @@ def main():
     ssh_password = args.password
     output_file = args.output
     skip_prepare = args.noprepare
-    
+
     print("--- Getting IP address and netmask for interface --- ", INTERFACE)
     # Extract IP address and netmask
     interface_ip, netmask = get_ip_and_netmask(INTERFACE)
@@ -171,6 +171,10 @@ def main():
         session_ips = get_cnodes_session_ips()
     else:
         session_ips = get_session_ips()
+
+    if not session_ips:
+        print("Error: No session IPs found.")
+        return
 
     if not skip_prepare:
         print("--- Killing existing qperf processes on each node ---")
