@@ -80,13 +80,13 @@ def kill_existing_qperf(session_ips, network_address, ssh_password, specific_ip=
             print("Killing existing qperf processes on", ip, "(skipping network check)")
         elif bitwise_and(ip, network_address) == network_address:
             print("Killing existing qperf processes on", ip)
-            try:
-                subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'pkill qperf'], check=True)
-            except subprocess.CalledProcessError as e:
-                if e.returncode != 1:
-                    print("Exception occurred while killing qperf processes on", ip, ":", e)
-                else:
-                    print("Looks like qperf process is not running yet on: ", ip)
+        try:
+            subprocess.run(['sshpass', '-p', ssh_password, 'ssh', '-o', 'StrictHostKeyChecking=no', ip, 'pkill qperf'], check=True)
+        except subprocess.CalledProcessError as e:
+            if e.returncode != 1:
+                print("Exception occurred while killing qperf processes on", ip, ":", e)
+            else:
+                print("Looks like qperf process is not running yet on: ", ip)
 
 # Function to transfer file to each IP in the same network address
 def transfer_file(session_ips, network_address, ssh_password, specific_ip=None):
