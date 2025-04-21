@@ -57,16 +57,23 @@ if [[ "$ACTION" == "apply" ]]; then
     # Auto-detect subnet if target IP not provided
     if [[ -z "$TARGET_IP" ]]; then
         echo "[INFO] No --target provided. Detecting subnet of $IFACE..."
-        SUBNET=$(ip -o -f inet addr show "$IFACE" | awk '{print $4}')
-        if [[ -z "$SUBNET" ]]; then
+        RAW_SUBNET=$(ip -o -f inet addr show "$IFACE" | awk '{print $4}')
+        if [[ -z "$RAW_SUBNET" ]]; then
             echo "[ERROR] Failed to detect subnet for interface $IFACE"
             exit 1
         fi
-        echo "[INFO] Using subnet: $SUBNET"
-        TARGET_MATCH="$SUBNET"
-    else
-        TARGET_MATCH="$TARGET_IP/32"
-    fi
+
+        IP_ONLY=$(echo "$RAW_SUBNET" | cut -d/ -f1)
+        MASK=$(echo "$RAW_SUBNET" | cut -d/ -f2)
+
+        if [[ "$MASK" == "32" ]]; then
+            # Replace /32 with /24
+            TARGET_MATCH="$(echo "$IP_ONLY" | cut -d. -f1-3).0/24"
+            echo "[INFO] Detected /32 mask GCP style, using adjusted subnet: $TARGET_MATCH"
+        else
+            TARGET_MATCH="$RAW_SUBNET"
+            echo "[INFO] Using detected subnet: $TARGET_MATCH"
+        fi
 
     echo "[INFO] Resetting qdisc on $IFACE..."
     sudo tc qdisc del dev "$IFACE" root 2>/dev/null
