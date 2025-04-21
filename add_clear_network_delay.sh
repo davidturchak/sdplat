@@ -21,6 +21,7 @@ Options:
   --iface    Network interface to apply (e.g., ib0)
 
   --target   Target IP address (optional for apply). If not given, subnet of --iface will be used.
+             If the detected subnet is /32, it will be expanded to /24.
 
   --delay    Delay in milliseconds (required for apply)
 
@@ -67,13 +68,15 @@ if [[ "$ACTION" == "apply" ]]; then
         MASK=$(echo "$RAW_SUBNET" | cut -d/ -f2)
 
         if [[ "$MASK" == "32" ]]; then
-            # Replace /32 with /24
             TARGET_MATCH="$(echo "$IP_ONLY" | cut -d. -f1-3).0/24"
-            echo "[INFO] Detected /32 mask GCP style, using adjusted subnet: $TARGET_MATCH"
+            echo "[INFO] Detected /32 mask, using adjusted subnet: $TARGET_MATCH"
         else
             TARGET_MATCH="$RAW_SUBNET"
             echo "[INFO] Using detected subnet: $TARGET_MATCH"
         fi
+    else
+        TARGET_MATCH="$TARGET_IP/32"
+    fi
 
     echo "[INFO] Resetting qdisc on $IFACE..."
     sudo tc qdisc del dev "$IFACE" root 2>/dev/null
