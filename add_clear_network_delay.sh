@@ -12,11 +12,13 @@ cat << EOF
 Usage:
   $0 --action apply --iface <iface> [--target <ip>] --delay <ms>
   $0 --action clear --iface <iface>
+  $0 --action show --iface <iface>
 
 Options:
-  --action   apply | clear
-             'apply' adds delay to iSCSI traffic (port 3260) to/from a specific IP or entire subnet.
+  --action   apply | clear | show
+             'apply' adds delay to iSCSI traffic (port 3260) to/from a specific IP or subnet.
              'clear' removes all tc rules from the given interface.
+             'show' displays current tc rules on the interface.
 
   --iface    Network interface to apply (e.g., ib0)
 
@@ -31,6 +33,7 @@ Examples:
   $0 --action apply --iface ib0 --target 10.212.12.102 --delay 10
   $0 --action apply --iface ib0 --delay 10
   $0 --action clear --iface ib0
+  $0 --action show --iface ib0
 EOF
 }
 
@@ -47,7 +50,7 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# Action: APPLY
+# ACTION: APPLY
 if [[ "$ACTION" == "apply" ]]; then
     if [[ -z "$IFACE" || -z "$DELAY_MS" ]]; then
         echo "[ERROR] Missing required arguments for apply."
@@ -93,7 +96,7 @@ if [[ "$ACTION" == "apply" ]]; then
 
     echo "[DONE] Delay applied."
 
-# Action: CLEAR
+# ACTION: CLEAR
 elif [[ "$ACTION" == "clear" ]]; then
     if [[ -z "$IFACE" ]]; then
         echo "[ERROR] Missing interface for clear."
@@ -105,7 +108,21 @@ elif [[ "$ACTION" == "clear" ]]; then
     sudo tc qdisc del dev "$IFACE" root 2>/dev/null
     echo "[DONE] Delay settings cleared."
 
-# Invalid action
+# ACTION: SHOW
+elif [[ "$ACTION" == "show" ]]; then
+    if [[ -z "$IFACE" ]]; then
+        echo "[ERROR] Missing interface for show."
+        print_help
+        exit 1
+    fi
+
+    echo "[INFO] Showing qdisc configuration for $IFACE..."
+    sudo tc qdisc show dev "$IFACE"
+    echo
+    echo "[INFO] Showing filter rules for $IFACE..."
+    sudo tc filter show dev "$IFACE"
+
+# INVALID
 else
     echo "[ERROR] Invalid or missing --action."
     print_help
