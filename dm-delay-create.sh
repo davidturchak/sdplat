@@ -22,6 +22,12 @@ clear_device() {
     dmsetup remove md0delay
 }
 
+# Function to show current configuration
+show_device() {
+    echo "Current md0delay configuration:"
+    dmsetup table md0delay
+}
+
 # Function to display help
 show_help() {
     echo "Usage: $0 --action <action> [--device <device>] [--delay <delay>]"
@@ -30,11 +36,12 @@ show_help() {
     echo "  create      Create a delayed device on the specified device."
     echo "  reload      Reload the delay target with a new delay value."
     echo "  clear       Remove the delayed device."
+    echo "  show        Show the current configuration of the delayed device."
     echo
     echo "Options:"
-    echo "  --action <action>   Required. Specify the action to perform (create, reload, or clear)."
-    echo "  --device <device>   Required for 'create'. Specify the device to create the delayed device on."
-    echo "  --delay <delay>     Required for 'reload'. Specify the new delay value (in milliseconds)."
+    echo "  --action <action>   Required. Action to perform (create, reload, clear, show)."
+    echo "  --device <device>   Required for 'create'. Device to create the delayed device on."
+    echo "  --delay <delay>     Required for 'reload'. New delay value in milliseconds."
     echo "  --help              Show this help message."
     echo
 }
@@ -97,8 +104,11 @@ case "$ACTION" in
     clear)
         clear_device
         ;;
+    show)
+        show_device
+        ;;
     *)
-        echo "Error: Invalid action. Valid actions are create, reload, or clear."
+        echo "Error: Invalid action. Valid actions are create, reload, clear, or show."
         show_help
         exit 1
         ;;
