@@ -1,34 +1,59 @@
 #!/bin/bash
 
-# Function to create the delayed device
+# Function to derive the delayed device name
+get_delayed_name() {
+    local device="$1"
+    basename=$(basename "$device")
+    echo "${basename}_delayed"
+}
+
+# Create delayed device
 create_device() {
     local device="$1"
-    echo "Creating delayed device on $device..."
-    dmsetup create md0delay --table "0 $(blockdev --getsz $device) delay $device 0 0"
+    local name=$(get_delayed_name "$device")
+    echo "Creating delayed device /dev/mapper/$name on $device..."
+    dmsetup create "$name" --table "0 $(blockdev --getsz $device) delay $device 0 0"
 }
 
-# Function to reload the delay values
+# Reload delay settings
 reload_device() {
-    local delay="$1"
-    local new_table="0 $(blockdev --getsz /dev/md0) delay /dev/md0 0 $delay"
-    echo "Reloading delayed device with new delay value: $delay..."
-    echo "$new_table" | dmsetup reload md0delay
-    dmsetup resume md0delay
+    local device="$1"
+    local delay="$2"
+    local name=$(get_delayed_name "$device")
+    local new_table="0 $(blockdev --getsz $device) delay $device 0 $delay"
+    echo "Reloading delayed device /dev/mapper/$name with delay $delay..."
+    echo "$new_table" | dmsetup reload "$name"
+    dmsetup resume "$name"
 }
 
-# Function to clear the delayed device
+# Remove delayed device
 clear_device() {
-    echo "Removing delayed device md0delay..."
-    dmsetup remove md0delay
+    local device="$1"
+    local name=$(get_delayed_name "$device")
+    echo "Removing delayed device /dev/mapper/$name..."
+    dmsetup remove "$name"
 }
 
-# Function to show current configuration
+# Show config for a specific delayed device
 show_device() {
-    echo "Current md0delay configuration:"
-    dmsetup table md0delay
+    local device="$1"
+    local name=$(get_delayed_name "$device")
+    echo "Configuration for /dev/mapper/$name:"
+    dmsetup table "$name"
 }
 
-# Function to display help
+# List all *_delayed devices
+list_devices() {
+    echo "Listing all *_delayed devices:"
+    for name in /dev/mapper/*_delayed; do
+        [[ -e "$name" ]] || continue
+        echo "Device: $name"
+        dmsetup table "$(basename "$name")"
+        echo
+    done
+}
+
+# Help text
 show_help() {
     echo "Usage: $0 --action <action> [--device <device>] [--delay <delay>]"
     echo
@@ -36,22 +61,22 @@ show_help() {
     echo "  create      Create a delayed device on the specified device."
     echo "  reload      Reload the delay target with a new delay value."
     echo "  clear       Remove the delayed device."
-    echo "  show        Show the current configuration of the delayed device."
+    echo "  show        Show configuration of a specific delayed device."
+    echo "  list        List all current *_delayed device configurations."
     echo
     echo "Options:"
-    echo "  --action <action>   Required. Action to perform (create, reload, clear, show)."
-    echo "  --device <device>   Required for 'create'. Device to create the delayed device on."
-    echo "  --delay <delay>     Required for 'reload'. New delay value in milliseconds."
-    echo "  --help              Show this help message."
+    echo "  --action <action>   Required. Action to perform."
+    echo "  --device <device>   Required for create, reload, clear, show."
+    echo "  --delay <delay>     Required for reload. Delay value in ms."
+    echo "  --help              Show this help."
     echo
 }
 
-# Main script
+# Main logic
 ACTION=""
 DEVICE=""
 DELAY=""
 
-# Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
         --action)
@@ -78,20 +103,21 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-# Validate action argument
+# Validate required parameters
 if [[ -z "$ACTION" ]]; then
     echo "Error: --action must be specified."
     show_help
     exit 1
 fi
 
-# Perform action based on the argument
+if [[ "$ACTION" =~ ^(create|reload|clear|show)$ && -z "$DEVICE" ]]; then
+    echo "Error: --device must be specified for '$ACTION'."
+    exit 1
+fi
+
+# Execute action
 case "$ACTION" in
     create)
-        if [[ -z "$DEVICE" ]]; then
-            echo "Error: --device must be provided for create action."
-            exit 1
-        fi
         create_device "$DEVICE"
         ;;
     reload)
@@ -99,16 +125,19 @@ case "$ACTION" in
             echo "Error: --delay must be provided for reload action."
             exit 1
         fi
-        reload_device "$DELAY"
+        reload_device "$DEVICE" "$DELAY"
         ;;
     clear)
-        clear_device
+        clear_device "$DEVICE"
         ;;
     show)
-        show_device
+        show_device "$DEVICE"
+        ;;
+    list)
+        list_devices
         ;;
     *)
-        echo "Error: Invalid action. Valid actions are create, reload, clear, or show."
+        echo "Invalid action: $ACTION"
         show_help
         exit 1
         ;;
