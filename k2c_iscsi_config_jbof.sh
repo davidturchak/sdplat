@@ -470,26 +470,29 @@ function create_partitions()
 
 function config_dm_delay()
 {
-log "Wrapping devices in dm-delay (0ms read/write latency)..."
-local -i dev_id=0
-for dev in "${g_lu_devs[@]}"; do
-    base_dev=$(basename "$dev")
-    delayed_dev="/dev/mapper/${base_dev}_delayed${dev_id}"
-    # Only create dm-delay if not already present
+    log "Wrapping devices in dm-delay (0ms read/write latency)..."
+    local new_lu_devs=()
 
-    if [ ! -e "$delayed_dev" ]; then
-        dmsetup create ${base_dev}_delayed${dev_id} --table "0 $(blockdev --getsz $dev) delay $dev 0 0"
-        if [ $? -eq 0 ]; then
-            log "Created $delayed_dev with 0ms read/write delay"
-            # Update array to point to the delayed device
-            g_lu_devs=( "${g_lu_devs[@]/$dev/$delayed_dev}" )
-            ((devid++))
+    for dev in "${g_lu_devs[@]}"; do
+        base_dev=$(basename "$dev")
+        delayed_dev="/dev/mapper/${base_dev}_delayed"
+
+        if [ ! -e "$delayed_dev" ]; then
+            dmsetup create ${base_dev}_delayed --table "0 $(blockdev --getsz "$dev") delay $dev 0 0"
+            if [ $? -eq 0 ]; then
+                log "Created $delayed_dev with 0ms read/write delay"
+            else
+                log "Failed to create dm-delay for $dev"
+                exit 1
+            fi
         else
-            log "Failed to create dm-delay for $dev"
-            exit
+            log "$delayed_dev already exists, skipping creation"
         fi
-    fi
-done
+
+        new_lu_devs+=( "$delayed_dev" )
+    done
+
+    g_lu_devs=("${new_lu_devs[@]}")
 }
 
 function config_iscsi()
