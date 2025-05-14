@@ -4,7 +4,7 @@ print_help() {
   echo "Usage: $0 --nic <interface> --ip <IP address> --action <block|unblock>"
   echo
   echo "Options:"
-  echo "  --nic     Network interface (e.g., eth0)"
+  echo "  --nic     Network interface (e.g., eth0, eth6)"
   echo "  --ip      IP address to block or unblock"
   echo "  --action  Action to take: block or unblock"
   echo "  --help    Show this help message"
@@ -25,27 +25,29 @@ done
 
 # Validate input
 if [[ -z "$NIC" || -z "$IP" || -z "$ACTION" ]]; then
-  echo "Error: Missing parameters."
+  echo "Error: Missing required parameters."
   print_help
 fi
 
-if ! [[ "$IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Error: Invalid IP format."
+if ! [[ "$IP" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+  echo "Error: Invalid IP format: $IP"
   exit 1
 fi
 
 # Perform action
 case "$ACTION" in
   block)
-    echo "Blocking $IP on $NIC..."
-    iptables -A INPUT -i "$NIC" -s "$IP" -j DROP
+    echo "Blocking IP $IP on interface $NIC..."
+    iptables -I INPUT -i "$NIC" -s "$IP" -j DROP
+    iptables -I FORWARD -i "$NIC" -s "$IP" -j DROP
     ;;
   unblock)
-    echo "Unblocking $IP on $NIC..."
+    echo "Unblocking IP $IP on interface $NIC..."
     iptables -D INPUT -i "$NIC" -s "$IP" -j DROP
+    iptables -D FORWARD -i "$NIC" -s "$IP" -j DROP
     ;;
   *)
-    echo "Error: Invalid action '$ACTION'"
+    echo "Error: Unknown action '$ACTION'. Use 'block' or 'unblock'."
     print_help
     ;;
 esac
