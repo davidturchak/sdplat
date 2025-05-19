@@ -38,13 +38,15 @@ fi
 case "$ACTION" in
   block)
     echo "Blocking IP $IP on interface $NIC..."
-    iptables -I INPUT -i "$NIC" -s "$IP" -j DROP
+    iptables -I INPUT   -i "$NIC" -s "$IP" -j DROP
     iptables -I FORWARD -i "$NIC" -s "$IP" -j DROP
+    iptables -I OUTPUT  -o "$NIC" -d "$IP" -j DROP
     ;;
   unblock)
     echo "Unblocking IP $IP on interface $NIC..."
-    iptables -D INPUT -i "$NIC" -s "$IP" -j DROP
+    iptables -D INPUT   -i "$NIC" -s "$IP" -j DROP
     iptables -D FORWARD -i "$NIC" -s "$IP" -j DROP
+    iptables -D OUTPUT  -o "$NIC" -d "$IP" -j DROP
     ;;
   *)
     echo "Error: Unknown action '$ACTION'. Use 'block' or 'unblock'."
