@@ -31,10 +31,10 @@ Options:
   --help     Show this help message and exit
 
 Examples:
-  $0 --action apply --iface ib0 --target 10.212.12.101,10.212.12.102 --delay 10
-  $0 --action apply --iface ib0 --delay 10
-  $0 --action clear --iface ib0
-  $0 --action show --iface ib0
+  $0 --action apply --iface eth6 --target 10.212.12.101,10.212.12.102 --delay 10
+  $0 --action apply --iface eth6 --delay 10
+  $0 --action clear --iface eth6
+  $0 --action show --iface eth6
 EOF
 }
 
