@@ -1,5 +1,5 @@
 #!/bin/bash
-#test
+#test1
 print_help() {
   echo "Usage: $0 --nic <interface> --ip <IP address> --action <block|unblock>"
   echo
